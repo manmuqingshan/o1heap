@@ -22,9 +22,9 @@ O1Heap is implemented in C99/C11 following MISRA C:2012; it is extremely compact
 understand and validate.
 It is designed to be usable across all conventional architectures out of the box, from 8-bit to 64-bit systems.
 
-As a reference, on an RP2350 executed from SRAM, allocation takes 84~107 cycles and deallocation takes 61~94 cycles —
-always, irrespective of the preceding (de)allocation sequence, fragmentation, or memory usage —
-making it one of the fastest allocators out there.
+⚡ As a reference, on an RP2350 CM33, allocation takes ≤132 cycles and deallocation takes ≤110 cycles —
+*always*, irrespective of the size, preceding (de)allocation sequence, fragmentation, or memory usage —
+making it not only suitable for hard real-time but also one of the fastest allocators out there.
 Similar results have been observed on a Cortex M4 MCU.
 
 ## 📚 Usage
@@ -218,8 +218,8 @@ The size of the overhead $a$ is represented in the codebase as `O1HEAP_ALIGNMENT
 because it also dictates the allocated memory pointer alignment.
 Due to the overhead, the maximum amount of memory available to the application per allocation is
 $F^\prime{}(r) = F(r) - a$.
-The amount of the overhead per allocation and, therefore, pointer alignment is 4×(pointer width);
-e.g., for a 32-bit platform, the overhead/alignment is 16 bytes (128 bits).
+The amount of the overhead per allocation and, therefore, pointer alignment is 2×(pointer width);
+e.g., for a 32-bit platform, the overhead/alignment is 8 bytes (64 bits).
 
 From the above follows that $F(r) \ge 2 a$.
 Remember that $r>0$ -- following the semantics of `malloc(..)`,
@@ -289,9 +289,19 @@ followed by the appropriate static analyser warning suppression statement:
 
 ## 📆 Changelog
 
-### v2.3
+### v3.0 \[PENDING RELEASE\]
 
-WORK IN PROGRESS
+Version 3.0 reduces the per-fragment overhead from 4×(pointer width) to 2×(pointer width) by packing the fragment header.
+On 32-bit platforms, `O1HEAP_ALIGNMENT` and the per-fragment overhead are now 8 bytes instead of 16.
+
+This change saves memory but has some performance cost; e.g., on
+[RP2350 (Cortex M33) allocation is 28% slower, although deallocation is 3% faster](https://github.com/pavel-kirienko/o1heap/pull/32).
+The trade-off is believed to be justifiable for most applications.
+If you want to squeeze maximum allocation performance at the cost of higher memory overheads and a marginal decrease
+in deallocation time, consider using v2 instead -- there are no known issues with that version.
+
+This revision also adds a simple native performance test suite for RP2350.
+Similar suites for other targets may appear later.
 
 ### v2.2
 
