@@ -297,8 +297,8 @@ On 32-bit platforms, `O1HEAP_ALIGNMENT` and the per-fragment overhead are now 8 
 This change saves memory but has some performance cost; e.g., on
 [RP2350 (Cortex M33) allocation is 28% slower, although deallocation is 3% faster](https://github.com/pavel-kirienko/o1heap/pull/32).
 The trade-off is believed to be justifiable for most applications.
-If you want to squeeze maximum allocation performance at the cost of higher memory overheads and a marginal decrease
-in deallocation time, consider using v2 instead -- there are no known issues with that version.
+If you want to squeeze maximum allocation performance at the cost of a higher memory overhead and a marginal
+deallocation slowdown, consider using v2 instead -- there are no known issues with that version.
 
 This revision also adds a simple native performance test suite for RP2350.
 Similar suites for other targets may appear later.
