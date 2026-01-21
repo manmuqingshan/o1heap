@@ -22,7 +22,7 @@ O1Heap is implemented in C99/C11 following MISRA C:2012; it is extremely compact
 understand and validate.
 It is designed to be usable across all conventional architectures out of the box, from 8-bit to 64-bit systems.
 
-⚡ As a reference, on an RP2350 CM33, allocation takes ≤132 cycles and deallocation takes ≤110 cycles —
+⚡ As a reference, on an RP2350 CM33, allocation takes ≤125 cycles and deallocation takes ≤115 cycles —
 *always*, irrespective of the size, preceding (de)allocation sequence, fragmentation, or memory usage —
 making it not only suitable for hard real-time but also one of the fastest allocators out there.
 Similar results have been observed on a Cortex M4 MCU.
@@ -50,7 +50,7 @@ Avoid concurrent access to the heap. Use locking if necessary.
 
 ### Example
 
-```c
+```c++
 #include "o1heap.h"
 #include <stdalign.h>
 
@@ -62,10 +62,10 @@ int main(void)
     if (heap == NULL) {
         return 1;  // Initialization failed -- arena not aligned or too small
     }
-    void* ptr = o1heapAllocate(heap, 200);
+    void* ptr = o1heapAllocate(heap, 200);  // Always takes the same time to complete.
     if (ptr != NULL) {
         // Use the allocated memory...
-        o1heapFree(heap, ptr);
+        o1heapFree(heap, ptr);  // Also constant-time!
     }
     return 0;
 }
@@ -87,19 +87,15 @@ The macro `O1HEAP_ASSERT(x)` can be defined to customize the assertion handling 
 To disable assertion checks, the macro should expand to `(void)(x)`.
 If not specified, the macro expands to the standard assertion check macro `assert(x)` as defined in `<assert.h>`.
 
-#### O1HEAP_LIKELY(x)
+#### O1HEAP_LIKELY(x) & O1HEAP_UNLIKELY(x)
 
 Some of the conditional branching statements are equipped with this annotation to hint the compiler that
-the generated code should be optimized for the case where the corresponding branch is taken.
+the generated code should be optimized for the case where the corresponding branch is (not) taken.
 This is done to reduce the worst-case execution time.
 
 The macro should expand to a compiler-specific branch weighting intrinsic,
 or to the original expression `(x)` if no such hinting is desired.
-If not specified, the macro expands as follows:
-
-- For some well-known compilers the macro automatically expands to appropriate branch weighting intrinsics.
-  For example, for GCC, Clang, and ARM Compiler, it expands to `__builtin_expect((x), 1)`.
-- For other (unknown) compilers it expands to the original expression with no modifications: `(x)`.
+Defaults are provided for well-known compilers.
 
 #### O1HEAP_CLZ(x)
 
@@ -112,12 +108,6 @@ If not overridden by the user, for some compilers `O1HEAP_CLZ(x)` will expand to
 (e.g., `__builtin_clzl(x)` for GCC/Clang).
 For other compilers it will default to a slow software implementation,
 which is likely to significantly degrade the performance of the library.
-
-#### O1HEAP_TRACE
-
-This option is intended for advanced diagnostics and may not be useful in most applications.
-If defined and is nonzero, makes o1heap invoke `extern` trace functions (implemented in the application)
-on every allocation and deallocation. Please refer to `o1heap.h` for usage details.
 
 ## ⚙️ Design
 
@@ -289,19 +279,20 @@ followed by the appropriate static analyser warning suppression statement:
 
 ## 📆 Changelog
 
-### v3.0 \[PENDING RELEASE\]
+### v3.0 release candidate
 
 Version 3.0 reduces the per-fragment overhead from 4×(pointer width) to 2×(pointer width) by packing the fragment header.
 On 32-bit platforms, `O1HEAP_ALIGNMENT` and the per-fragment overhead are now 8 bytes instead of 16.
+This change saves memory but has some performance cost; e.g., on RP2350 (Cortex M33) allocation is ≈19% slower
+(allocation mean 119 cycles vs. 100 cycles, deallocation mean 79 vs. 74 cycles;
+see the on-target benchmark in `perftest/`).
+The trade-off is believed to be justifiable for virtually all applications.
 
-This change saves memory but has some performance cost; e.g., on
-[RP2350 (Cortex M33) allocation is 28% slower, although deallocation is 3% faster](https://github.com/pavel-kirienko/o1heap/pull/32).
-The trade-off is believed to be justifiable for most applications.
-If you want to squeeze maximum allocation performance at the cost of a higher memory overhead and a marginal
-deallocation slowdown, consider using v2 instead -- there are no known issues with that version.
+`o1heapReallocate` is added, which is constant-complexity except for the case when the old fragment cannot be
+expanded in-place. See the API docs for details.
 
-This revision also adds a simple native performance test suite for RP2350.
-Similar suites for other targets may appear later.
+The trace events introduced in v2.2 have been removed due to unclean integration and relative lack of use.
+They may reappear in a future version, perhaps designed differently; please open an issue to discuss.
 
 ### v2.2
 

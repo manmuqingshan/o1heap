@@ -35,7 +35,6 @@ namespace internal
 {
 extern "C" {
 auto log2Floor(const std::size_t x) -> std::uint8_t;
-auto log2Ceil(const std::size_t x) -> std::uint8_t;
 auto pow2(const std::uint8_t power) -> std::size_t;
 auto roundUpToPowerOf2(const std::size_t x) -> std::size_t;
 }
@@ -187,6 +186,18 @@ struct O1HeapInstance final
         validate();
         o1heapFree(reinterpret_cast<::O1HeapInstance*>(this), pointer);
         validate();
+    }
+
+    [[nodiscard]] auto reallocate(void* const pointer, const size_t new_amount)
+    {
+        validate();
+        const auto out = o1heapReallocate(reinterpret_cast<::O1HeapInstance*>(this), pointer, new_amount);
+        if (out != nullptr)
+        {
+            Fragment::constructFromAllocatedMemory(out).validate(this);
+        }
+        validate();
+        return out;
     }
 
     [[nodiscard]] auto getMaxAllocationSize() const
