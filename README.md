@@ -279,7 +279,7 @@ followed by the appropriate static analyser warning suppression statement:
 
 ## 📆 Changelog
 
-### v3.0 release candidate
+### v3.0
 
 Version 3.0 reduces the per-fragment overhead from 4×(pointer width) to 2×(pointer width) by packing the fragment header.
 On 32-bit platforms, `O1HEAP_ALIGNMENT` and the per-fragment overhead are now 8 bytes instead of 16.
